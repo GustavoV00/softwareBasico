@@ -1,0 +1,58 @@
+-> Coisas que terminam com dois pontos: Rótulo
+
+text: Contém as informações do programa
+data: Contém as váriaveis globais
+
+.section e .globl: são as diretivas que orientam o montador e indica que os symbolos devem ser reconhecidos externamente
+.section e .data: Indica que ali inicia a lista de váriaveis globals do código. (Caso n tenha nenhuma, pode ser omitida, sem nenhum problema)
+.section e .text: Indica os comandos em assembly, a seguir do programa que vai ser executado
+
+execução, exemplo:
+    as esqueletoS.s -o esqueletoS.o
+    ld esqueletoS.o -o esqueletoS
+    ./esqueletoS
+    echo $? -> Se o código retonar uma váraivel de ambiente
+
+Commands:
+q = 64 bits ou quad word. (8 bytes)
+l = 16 bits ou double word. (2 bytes)
+movq = a, b (Copia "a" para o "b")
+
+Registrador:
+%   = Registradores
+$   = Constantes
+' ' = 16 bits (2 bytes), (AX, BX, etc...)
+E   = 32 bits (4 bytes), (EAX, EBX, etc...)
+R   = 64 bits (8 bytes), (RAX, RBX, etc...)
+    -> Compatibilidades, por isso existe os 3 tipos de registradores.
+
+
+EAX, EBX, ECX, EDX = "Propositos gerais"
+EAX = Accumulator
+ECX = Counter
+EDX = Data
+EBX = Base
+
+ESP, EBP = "Propositos gerais também". "Importante para execução do programa
+e gerenciamento de memória"
+
+ESI, EDI = "Propositos Gerais trambém". "Usado para a pontar para o destino e fonte, quando precisa"
+
+ESP = Stack pointer
+EBP = Base pointer
+ESI = Source Index
+EDI = DEstination Index
+EIP = Program Counter (aponta para a próxima instrução).
+
+Endereçamento:
+    Registrador:
+        movq %rax, %rbx # %rbx = %rax
+
+    Imediato: 
+        movq $60, %rax # %rax = 60
+
+-> Não se pode escrever %rax em uma constante.
+    ex: movq %rax, 0x60,    #m[0x60] = %rax
+
+Váriavel == Endereço de memória (Em assembly).
+0x1000 bytes após _start.

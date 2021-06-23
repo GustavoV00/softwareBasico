@@ -1,2 +1,2 @@
-# softwareBasico
-Exercícios resolvidos da disciplina de software básico UFPR
+# Software Básico
+Anotações de software Basico
