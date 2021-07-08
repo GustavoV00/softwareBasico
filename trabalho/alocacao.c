@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int topoInicialHeap;
+void* inicioHeap;
+void* topoHeap;
 
 void iniciaAlocador();
 void finalizaAlocador();
@@ -10,22 +11,17 @@ int liberaMem(void* bloco);
 void imprimir();
 
 int main(int argc, char ** argv){
-    printf("%d\n", topoInicialHeap);
+	iniciaAlocador();
+	printf("%p\n", inicioHeap);
+	printf("%p\n", topoHeap);
+
 	return (0);
 }
 
 void iniciaAlocador(){
-    topoInicialHeap = brk(0);
+	inicioHeap = sbrk(0); // sbrk(0) retorna o endereço do topo da heap
+	topoHeap = inicioHeap;
+	brk(topoHeap);
+
+	return;
 }
-
-
-void imprimeHeap(){
-    if(topoInicialHeap == 0){
-        printf("Loop para imprimir a heap\n");
-    
-    } else {
-        printf("Deu ruim ao iniciar a heap\n");
-    }
-}
-
-
