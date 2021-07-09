@@ -12,20 +12,29 @@ long int tamHeader = sizeof(long int);
 void iniciaAlocador();
 void finalizaAlocador();
 void* alocaMem(long int numBytes);
-int liberaMem(void* bloco);
+void liberaMem(void* bloco);
 void imprimeValoresDaHeap();
 
 int main(int argc, char ** argv){
+    int voltaInicioBloco = tamHeader * 2;
 	iniciaAlocador();
+
+    topoHeap = alocaMem(1008);
+
 	topoHeap = alocaMem(10);
-	topoHeap = alocaMem(30);
-	topoHeap = alocaMem(50);
-	topoHeap = alocaMem(60);
+
+	topoHeap = alocaMem(200);
+
 	topoHeap = alocaMem(1000);
 
+	topoHeap = alocaMem(1000);
+
+    percorreHeap = topoHeap-(voltaInicioBloco*5)-3218;
+    liberaMem(percorreHeap);
+    
+	topoHeap = alocaMem(1008);
+
 	imprimeValoresDaHeap();
-
-
 	return (0);
 }
 
@@ -37,31 +46,52 @@ void iniciaAlocador(){
 	return;
 }
 
-void finalizaAlocador() {
-	brk(inicioHeap);
-	return;
-}
-
 void* alocaMem(long int numBytes) {
+	percorreHeap = inicioHeap;
+	// Loop verifica se existe algum espaço livre na heap
+	// Caso não exista, aloca no topo da heap
+	while(percorreHeap != topoHeap) {
+		long int tamDataHeader  = *(percorreHeap+tamHeader);
+		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) <= numBytes) {
+			*percorreHeap = alocado;
+			*(percorreHeap+tamHeader) = numBytes;
+			return (void *) topoHeap;
+		}
+		percorreHeap += (tamHeader * 2) + tamDataHeader;
+	}
 	percorreHeap = topoHeap;
-	topoHeap += tamHeader*2;
+	topoHeap += (tamHeader*2) + numBytes;
 	brk((void *) topoHeap);
 
 	*percorreHeap = alocado;
-	percorreHeap += tamHeader;
-	*percorreHeap = numBytes;
-
-	topoHeap += numBytes;
-	brk((void *) topoHeap);
+	*(percorreHeap+tamHeader) = numBytes;
 
 	return (void *) topoHeap;
+}
+
+// Estou considerando o bloco, o endereço que aponta 
+// para o inicio do cabecalho
+// Nesse caso seria: [ 0/1 | tamHeader | DADOS ]
+// Na função eu passo o bloco para desalocado, 1 -> 0
+void liberaMem(void* bloco) {
+    printf("Desalocando dados: %p\n", bloco);
+    percorreHeap = (long int *) bloco;
+    *percorreHeap = desalocado;
+    percorreHeap = inicioHeap;
+
+	return;
+}
+
+void finalizaAlocador() {
+	brk((void *) inicioHeap);
+    return;
 }
 
 void  imprimeValoresDaHeap() {
 	if(topoHeap == inicioHeap) {
 		printf("Não existe nada alocado\n");
 		return;
-	}
+    }
 
 	percorreHeap = inicioHeap;
 	while(percorreHeap != topoHeap) {
@@ -73,17 +103,16 @@ void  imprimeValoresDaHeap() {
 		percorreHeap += tamHeader * 2;
 		printf("1-%p e %p\n", percorreHeap, percorreHeap);
 
-		if(alocadoOuDesalocado == 1) 
-			for(long int i = 0; i < tamDataHeader; i++) printf("*");
-		else
-			for(long int i = 0; i < tamDataHeader; i++) printf("-");
-
+//		if(alocadoOuDesalocado == 1) 
+//			for(long int i = 0; i < tamDataHeader; i++) printf("*");
+//		else
+//			for(long int i = 0; i < tamDataHeader; i++) printf("-");
+//
 		printf("\n");
 
 		percorreHeap += tamDataHeader;
 		printf("Verifica se chegou no topo: %p e %p\n", percorreHeap, topoHeap);
 	}
-	printf("cheguei aqui porra\n");
 }
 
 
