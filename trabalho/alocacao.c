@@ -16,23 +16,23 @@ void liberaMem(void* bloco);
 void imprimeValoresDaHeap();
 
 int main(int argc, char ** argv){
-    int voltaInicioBloco = tamHeader * 2;
+	void *a, *b, *c, *d, *e;
 	iniciaAlocador();
 
-    topoHeap = alocaMem(1008);
+	a = alocaMem(25);
+	b = alocaMem(50);
+	c = alocaMem(75);
+	d = alocaMem(100);
+	e = alocaMem(125);
+	
+	liberaMem(e);
+	liberaMem(b);
+	liberaMem(c);
 
-	topoHeap = alocaMem(10);
+	b = alocaMem(50);
+	c = alocaMem(70);
 
-	topoHeap = alocaMem(200);
-
-	topoHeap = alocaMem(1000);
-
-	topoHeap = alocaMem(1000);
-
-    percorreHeap = topoHeap-(voltaInicioBloco*5)-3218;
-    liberaMem(percorreHeap);
-    
-	topoHeap = alocaMem(1008);
+	printf("%p | %p | %p | %p | %p \n", a, b, c, d, e);
 
 	imprimeValoresDaHeap();
 	return (0);
@@ -66,7 +66,7 @@ void* alocaMem(long int numBytes) {
 	*percorreHeap = alocado;
 	*(percorreHeap+tamHeader) = numBytes;
 
-	return (void *) topoHeap;
+	return (void *) percorreHeap;
 }
 
 // Estou considerando o bloco, o endereço que aponta 
@@ -103,11 +103,11 @@ void  imprimeValoresDaHeap() {
 		percorreHeap += tamHeader * 2;
 		printf("1-%p e %p\n", percorreHeap, percorreHeap);
 
-//		if(alocadoOuDesalocado == 1) 
-//			for(long int i = 0; i < tamDataHeader; i++) printf("*");
-//		else
-//			for(long int i = 0; i < tamDataHeader; i++) printf("-");
-//
+		if(alocadoOuDesalocado == 1) 
+			for(long int i = 0; i < tamDataHeader; i++) printf("*");
+		else
+			for(long int i = 0; i < tamDataHeader; i++) printf("-");
+
 		printf("\n");
 
 		percorreHeap += tamDataHeader;
