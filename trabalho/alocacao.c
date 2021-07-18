@@ -54,11 +54,12 @@ void* alocaMem(long int numBytes) {
 		long int tamDataHeader  = *(percorreHeap+tamHeader);
 		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) <= numBytes) {
 			*percorreHeap = alocado;
-			*(percorreHeap+tamHeader) = numBytes;
+			//*(percorreHeap+tamHeader) = numBytes;
 			return (void *) topoHeap;
 		}
 		percorreHeap += (tamHeader * 2) + tamDataHeader;
 	}
+
 	percorreHeap = topoHeap;
 	topoHeap += (tamHeader*2) + numBytes;
 	brk((void *) topoHeap);
@@ -87,7 +88,7 @@ void finalizaAlocador() {
     return;
 }
 
-void  imprimeValoresDaHeap() {
+void imprimeMapa() {
 	if(topoHeap == inicioHeap) {
 		printf("Não existe nada alocado\n");
 		return;
@@ -103,11 +104,13 @@ void  imprimeValoresDaHeap() {
 		percorreHeap += tamHeader * 2;
 		printf("1-%p e %p\n", percorreHeap, percorreHeap);
 
+		for(long int i = 0; i < tamHeader * 2; i++) printf("#");
+		printf("\n");
+
 		if(alocadoOuDesalocado == 1) 
-			for(long int i = 0; i < tamDataHeader; i++) printf("*");
+			for(long int i = 0; i < tamDataHeader; i++) printf("+");
 		else
 			for(long int i = 0; i < tamDataHeader; i++) printf("-");
-
 		printf("\n");
 
 		percorreHeap += tamDataHeader;
