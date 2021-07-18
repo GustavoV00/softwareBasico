@@ -54,6 +54,7 @@ void* alocaMem(long int numBytes) {
 		long int tamDataHeader  = *(percorreHeap+tamHeader);
 		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) <= numBytes) {
 			*percorreHeap = alocado;
+			// Testar isso aqui mais tarde
 			//*(percorreHeap+tamHeader) = numBytes;
 			return (void *) topoHeap;
 		}
