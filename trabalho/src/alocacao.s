@@ -48,48 +48,36 @@ alocaMem:
  
 	movq inicioHeap, %rax
 	movq %rax, topoHeap
+
+	inicioEncontrarEspacoHeap:
+
 # 	# Quando entrar no while o percorreHeap começa com o inicioHeap 
 # 	# Sem entrar now hile o percorreHeap começa no topóHeap
 
-	movq topoHeap, %rax			# percorreHeap = topoHeap
- 	movq %rax, percorreHeap
-
-	movq tamHeader, %rbx
-
- 	addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
- 	addq %rbx, topoHeap			
-	addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
-
- 	movq topoHeap, %rdi				# brk(topoHeap)
- 	movq $12, %rax
- 	syscall
-
-	movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
-	movq alocado, %rcx
-	movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
-
-#	movq $inteiro, %rdi
-#	movq (%rax), %rsi
-#	call printf
-#
-#	movq $quebraLinha, %rdi
-#	call printf
-
-	movq %rax, percorreHeap
-	addq %rbx, %rax
-	movq %r12, (%rax)
-
-#	movq $ponteiro, %rdi
-#	movq percorreHeap, %rsi
-#	call printf
-#
-#	movq $quebraLinha, %rdi
-#	call printf
-
-	# TALVEZ DE BUG NESSA PARTE DO CÓDIGO
-
- 	popq %rbp
- 	ret
+	fimEncontrarEspacoHeap:
+		movq topoHeap, %rax			# percorreHeap = topoHeap
+		movq %rax, percorreHeap
+	
+		movq tamHeader, %rbx
+	
+		addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
+		addq %rbx, topoHeap			
+		addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
+	
+		movq topoHeap, %rdi				# brk(topoHeap)
+		movq $12, %rax
+		syscall
+	
+		movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
+		movq alocado, %rcx
+		movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
+	
+		movq %rax, percorreHeap
+		addq %rbx, %rax
+		movq %r12, (%rax)
+	
+		popq %rbp
+		ret
  
 imprimeMapa:
 	pushq %rbp
@@ -115,88 +103,88 @@ imprimeMapa:
 		movq %rax, percorreHeap		# percorreHeap = inicioHeap;
 
 #		# Pular o while por enquanto, e fazer para apenas um caso
-#
-		movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
+		inicioMapaHeap:
+			cmpq %rax, %rcx
+			jl fimImprimeMapa
 
-		addq %rbx, percorreHeap
-		movq percorreHeap, %r14		# tamDataHeader = *(percorreHeap + tamDataHeader)
-
-		movq tamHeader, %rbx
-		addq tamHeader, %rbx
-		
-		movq $0, %r12				# i = 0;
-		inicioForCabecalho:
-			cmpq $16, %r12
-			jge fimForCabecalho
-
-			movq $str3, %rdi
-			call printf
-
-			addq $1, %r12
-			jmp inicioForCabecalho
-
-		fimForCabecalho:
-		movq $quebraLinha, %rdi
-		call printf
-
-#		movq $inteiro, %rdi
-#		movq (%r13), %rsi
-#		call printf
-#
-#		movq $quebraLinha, %rdi
-#		call printf
-#
-#		movq $inteiro, %rdi
-#		movq (%r14), %rsi
-#		call printf
-#
-#		movq $quebraLinha, %rdi
-#		call printf
-
-		movq $0, %r12
-		cmpq $1, (%r13)
-		je inicioImprimeAlocado
-		jmp inicioImprimeDesalocado
-
-		inicioImprimeAlocado:
-			cmpq (%r14), %r12
-			jge fimImprimes
-
-			movq $str4, %rdi
-			call printf
-
-			addq $1, %r12
-			jmp inicioImprimeAlocado
-
-		inicioImprimeDesalocado:
-			cmpq (%r14), %r12
-			jge fimImprimes
-
-			movq $str5, %rdi
-			call printf
-
-			addq $1, %r12
-			jmp inicioImprimeAlocado
-
-		fimImprimes:
-		movq $quebraLinha, %rdi
-		call printf
-
-		addq %r14, percorreHeap
+			movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
 	
-		movq $ponteiro, %rdi
-		movq $percorreHeap, %rsi
-		call printf
+			addq %rbx, percorreHeap
+			movq percorreHeap, %r14		# tamDataHeader = *(percorreHeap + tamDataHeader)
+			addq %rbx, percorreHeap
+	
+			movq $0, %r12				# i = 0;
+			inicioForCabecalho:
+				cmpq $16, %r12
+				jge fimForCabecalho
+	
+				movq $str3, %rdi
+				call printf
+	
+				addq $1, %r12
+				jmp inicioForCabecalho
+	
+			fimForCabecalho:
+			movq $quebraLinha, %rdi
+			call printf
+	
+			movq $0, %r12
+			cmpq $1, (%r13)
+			je inicioImprimeAlocado
+			jmp inicioImprimeDesalocado
+	
+			inicioImprimeAlocado:
+				cmpq (%r14), %r12
+				jge fimImprimes
+	
+				movq $str4, %rdi
+				call printf
+	
+				addq $1, %r12
+				jmp inicioImprimeAlocado
+	
+			inicioImprimeDesalocado:
+				cmpq (%r14), %r12
+				jge fimImprimes
+	
+				movq $str5, %rdi
+				call printf
+	
+				addq $1, %r12
+				jmp inicioImprimeAlocado
+	
+			fimImprimes:
+			movq $quebraLinha, %rdi
+			call printf
+	
+			movq (%r14), %rax
+			addq %rax, percorreHeap
+	
+			movq $ponteiro, %rdi
+			movq inicioHeap, %rsi
+			call printf
+	
+			movq $quebraLinha, %rdi
+			call printf
+		
+			movq $ponteiro, %rdi
+			movq percorreHeap, %rsi
+			call printf
+	
+			movq $quebraLinha, %rdi
+			call printf
+	
+			movq $ponteiro, %rdi
+			movq topoHeap, %rsi
+			call printf
+	
+			movq $quebraLinha, %rdi
+			call printf
 
-		movq $quebraLinha, %rdi
-		call printf
-
-		movq $ponteiro, %rdi
-		movq $topoHeap, %rsi
-		call printf
-
-		movq $quebraLinha, %rdi
-		call printf
-
+			popq %rbp
+			ret
+			jmp inicioMapaHeap
+		
+		fimImprimeMapa:
 		popq %rbp
 		ret
