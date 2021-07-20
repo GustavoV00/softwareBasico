@@ -3,7 +3,7 @@
 
 int main() {
     iniciaAlocador();
-    alocaMem(25);
+    alocaMem(100);
 
     imprimeMapa();
     return 0;

@@ -113,22 +113,3 @@ void imprimeMapa() {
 		printf("Verifica se chegou no topo: %p e %p\n", percorreHeap, topoHeap);
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -10,6 +10,9 @@
 	str3:			.string "#"
 	str4:			.string "+"
 	str5:			.string "-"
+	ponteiro:		.string "%p"
+	inteiro:		.string "%ld"
+	quebraLinha:	.string "\n"
 
 .section .text
 .globl iniciaAlocador
@@ -41,32 +44,49 @@ iniciaAlocador:
 alocaMem:
  	pushq %rbp
  	movq %rsp, %rbp
+	movq %rdi, %r12	
  
-#	movq inicioHeap, %rax
-#	movq %rax, topoHeap
+	movq inicioHeap, %rax
+	movq %rax, topoHeap
 # 	# Quando entrar no while o percorreHeap começa com o inicioHeap 
 # 	# Sem entrar now hile o percorreHeap começa no topóHeap
 
-	movq topoHeap, %rax
-# 	movq %rax, percorreHeap
-#	movq tamHeader, %rbx
+	movq topoHeap, %rax			# percorreHeap = topoHeap
+ 	movq %rax, percorreHeap
+
+	movq tamHeader, %rbx
+
+ 	addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
+ 	addq %rbx, topoHeap			
+	addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
+
+ 	movq topoHeap, %rdi				# brk(topoHeap)
+ 	movq $12, %rax
+ 	syscall
+
+	movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
+	movq alocado, %rcx
+	movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
+
+#	movq $inteiro, %rdi
+#	movq (%rax), %rsi
+#	call printf
 #
-# 	addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
-# 	addq %rbx, topoHeap			
-# 	movq 16(%rbp), %rdx			# %rdx = numBytes	
-#	addq %rdx, topoHeap			# Aqui aumenta o espaço da área de dados
-# 
-# 	movq $0, %rdi				# brk(topoHeap)
-# 	movq $12, %rax
-# 	syscall
+#	movq $quebraLinha, %rdi
+#	call printf
+
+	movq %rax, percorreHeap
+	addq %rbx, %rax
+	movq %r12, (%rax)
+
+#	movq $ponteiro, %rdi
+#	movq percorreHeap, %rsi
+#	call printf
 #
-#	movq alocado, %rax			# faz o alocado *alocado ir para o %rax
-#	movq %rax, (percorreHeap) 	# *percorreHeap = alocado/desalocado
-#
-#	movq tamHeader, %rbx		# %rax = $tamHeader (8)
-#	addq tamHeader, %rbx		# %rax += 8
-#	addq %rbx, percorreHeap		# percorreHeap += 8 (No endereço)
-#	movq %rdx, (percorreHeap)
+#	movq $quebraLinha, %rdi
+#	call printf
+
+	# TALVEZ DE BUG NESSA PARTE DO CÓDIGO
 
  	popq %rbp
  	ret
@@ -76,9 +96,9 @@ imprimeMapa:
 	movq %rsp, %rbp
 
 	movq inicioHeap, %rax
-	movq topoHeap, %rbx
+	movq topoHeap, %rcx
 
-	cmpq %rax, %rbx				# Verifica se existe algo alocado
+	cmpq %rax, %rcx				# Verifica se existe algo alocado
 	je if						# Caso não tenha nada alocado, finaliza o código com o if
 	jmp endif 					# Caso tenha algo alocado imprime os resultados
 
@@ -90,23 +110,93 @@ imprimeMapa:
 		ret
 
 	endif:
-		subq $16, %rsp
-		movq $str2, %rdi
+		movq inicioHeap, %rax
+		movq tamHeader, %rbx
+		movq %rax, percorreHeap		# percorreHeap = inicioHeap;
+
+#		# Pular o while por enquanto, e fazer para apenas um caso
+#
+		movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
+
+		addq %rbx, percorreHeap
+		movq percorreHeap, %r14		# tamDataHeader = *(percorreHeap + tamDataHeader)
+
+		movq tamHeader, %rbx
+		addq tamHeader, %rbx
+		
+		movq $0, %r12				# i = 0;
+		inicioForCabecalho:
+			cmpq $16, %r12
+			jge fimForCabecalho
+
+			movq $str3, %rdi
+			call printf
+
+			addq $1, %r12
+			jmp inicioForCabecalho
+
+		fimForCabecalho:
+		movq $quebraLinha, %rdi
 		call printf
 
-	#	movq inicioHeap, %rax
-	#	movq %rax, percorreHeap
+#		movq $inteiro, %rdi
+#		movq (%r13), %rsi
+#		call printf
+#
+#		movq $quebraLinha, %rdi
+#		call printf
+#
+#		movq $inteiro, %rdi
+#		movq (%r14), %rsi
+#		call printf
+#
+#		movq $quebraLinha, %rdi
+#		call printf
 
-	#	movq %rax, -8(%rbp) 
-	#	addq tamHeader, %rax
-	#	movq %rax, -16(%rbp)
+		movq $0, %r12
+		cmpq $1, (%r13)
+		je inicioImprimeAlocado
+		jmp inicioImprimeDesalocado
 
-	#	movq -8(%rbp), %rdi
-	#	call printf
+		inicioImprimeAlocado:
+			cmpq (%r14), %r12
+			jge fimImprimes
 
-	#	movq -16(%rbp), %rdi
-	#	call printf
+			movq $str4, %rdi
+			call printf
 
-		addq $16, %rsp
+			addq $1, %r12
+			jmp inicioImprimeAlocado
+
+		inicioImprimeDesalocado:
+			cmpq (%r14), %r12
+			jge fimImprimes
+
+			movq $str5, %rdi
+			call printf
+
+			addq $1, %r12
+			jmp inicioImprimeAlocado
+
+		fimImprimes:
+		movq $quebraLinha, %rdi
+		call printf
+
+		addq %r14, percorreHeap
+	
+		movq $ponteiro, %rdi
+		movq $percorreHeap, %rsi
+		call printf
+
+		movq $quebraLinha, %rdi
+		call printf
+
+		movq $ponteiro, %rdi
+		movq $topoHeap, %rsi
+		call printf
+
+		movq $quebraLinha, %rdi
+		call printf
+
 		popq %rbp
 		ret
