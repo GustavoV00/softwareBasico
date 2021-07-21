@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <alocacao.h>
+#include "./../includes/alocacao.h"
 
 
 long int* inicioHeap;
@@ -29,7 +29,7 @@ int main(int argc, char ** argv){
 
 	printf("%p | %p | %p | %p | %p \n", a, b, c, d, e);
 
-	imprimeValoresDaHeap();
+	imprimeMapa();
 	return (0);
 }
 
