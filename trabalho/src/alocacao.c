@@ -47,11 +47,11 @@ void* alocaMem(long int numBytes) {
 	// Caso não exista, aloca no topo da heap
 	while(percorreHeap != topoHeap) {
 		long int tamDataHeader  = *(percorreHeap+tamHeader);
-		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) <= numBytes) {
+		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) >= numBytes) {
 			*percorreHeap = alocado;
 			// Testar isso aqui mais tarde
 			//*(percorreHeap+tamHeader) = numBytes;
-			return (void *) topoHeap;
+			return (void *) percorreHeap;
 		}
 		percorreHeap += (tamHeader * 2) + tamDataHeader;
 	}

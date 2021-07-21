@@ -57,26 +57,30 @@ alocaMem:
 		jl fimDesalocado
 		jmp fimEncontrarEspacoHeap
 
-		# movq (%rax), %rbx
+		inicioDesalocado:
+			cmpq %r13, %r12
+			jle cabeNoEspaco
+			jmp fimDesalocado
+			cabeNoEspaco:
+				movq $str2, %rdi
+				call printf
 
-		# addq tamHeader, %rax
-		# movq (%rax), %r13
+				movq percorreHeap, %rax
+				movq alocado, %rbx
+				movq %rbx, (%rax)
+				movq percorreHeap, %rax
 
-		# cmpq %rbx, desalocado
-		# je inicioDesalocado
-		# jmp fimDesalocado
-		# inicioDesalocado:
-		# 	cmpq %r13, %r12
-		# 	jl cabeNoEspaco
-		# 	jmp fimDesalocado
-		# 	cabeNoEspaco:
-		# 		movq percorreHeap, %rax
-		# 		movq alocado, %rbx
-		# 		movq %rbx, (%rax)
-
-		# 		popq %rbp
-		# 		ret
+				popq %rbp
+				ret
 		fimDesalocado:
+		movq (%rax), %rbx
+
+		addq tamHeader, %rax
+		movq (%rax), %r13
+
+		cmpq %rbx, desalocado
+		je inicioDesalocado
+
 		movq percorreHeap, %rax
 		addq tamHeader, %rax
 		movq (%rax), %r15
@@ -107,22 +111,47 @@ alocaMem:
 		addq %rbx, %rax
 		movq %r12, (%rax)
 	
-		movq $inteiro, %rdi
-		movq (%rax), %rsi
-		call printf
+	#	movq $inteiro, %rdi
+	#	movq (%rax), %rsi
+	#	call printf
+
+		movq percorreHeap, %rax
 
 		popq %rbp
 		ret
  
 
-# desalocMem:
-#	pushq %rbp
-#	movq %rsp, %rbp
-#
-#
-#	popq %rbp
-#	ret
+liberaMem:
+	pushq %rbp
+	movq %rsp, %rbp
 
+	movq %rdi, %r12				# Bloco que vai ser desalocado. r12 = bloco
+
+	movq $ponteiro, %rdi
+	movq %r12, %rsi
+	call printf
+
+	movq %r12, percorreHeap
+	movq percorreHeap, %rax
+	movq $0, %rcx
+	movq %rcx, (%rax)
+
+	movq inicioHeap, %rax
+	movq %rax, percorreHeap
+
+	popq %rbp
+	ret
+
+finalizaAlocador:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	movq inicioHeap, %rdi
+	movq $12, %rax
+	syscall
+
+	popq %rbp
+	ret
 
 imprimeMapa:
 	pushq %rbp
@@ -216,17 +245,17 @@ imprimeMapa:
 			movq (%r14), %rax
 			addq %rax, percorreHeap
 	
-			movq $ponteiro, %rdi
-			movq inicioHeap, %rsi
-			call printf
-	
-			movq $ponteiro, %rdi
-			movq percorreHeap, %rsi
-			call printf
-	
-			movq $ponteiro, %rdi
-			movq topoHeap, %rsi
-			call printf
+#			movq $ponteiro, %rdi
+#			movq inicioHeap, %rsi
+#			call printf
+#	
+#			movq $ponteiro, %rdi
+#			movq percorreHeap, %rsi
+#			call printf
+#	
+#			movq $ponteiro, %rdi
+#			movq topoHeap, %rsi
+#			call printf
 
 			jmp inicioMapaHeap
 		
