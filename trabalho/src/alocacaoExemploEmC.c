@@ -11,25 +11,58 @@ long int desalocado = 0;
 long int tamHeader = sizeof(long int);
 
 int main(int argc, char ** argv){
-	void *a, *b, *c, *d, *e;
+	void *a, *b, *c, *d, *e, *f;
 	iniciaAlocador();
 
-	a = alocaMem(25);
-	b = alocaMem(50);
-	c = alocaMem(75);
-	d = alocaMem(100);
-	e = alocaMem(125);
-	
-	liberaMem(e);
-	liberaMem(b);
-	liberaMem(c);
-
-	b = alocaMem(50);
-	c = alocaMem(70);
-
-	printf("%p | %p | %p | %p | %p \n", a, b, c, d, e);
-
+	a = alocaMem(400);
 	imprimeMapa();
+	printf("\n");
+
+	b = alocaMem(300);
+	imprimeMapa();
+	printf("\n");
+
+	c = alocaMem(100);
+	imprimeMapa();
+	printf("\n");
+
+	d = alocaMem(200);
+	imprimeMapa();
+	printf("\n");
+
+	liberaMem(a);
+	imprimeMapa();
+	printf("\n");
+
+	e = alocaMem(500);
+	imprimeMapa();
+	printf("\n");
+
+	liberaMem(d);
+	imprimeMapa();
+	printf("\n");
+
+	liberaMem(e);
+	imprimeMapa();
+	printf("\n");
+
+	e = alocaMem(20);
+	imprimeMapa();
+	printf("\n");
+
+//	b = alocaMem(20);
+//	printf("\n");
+
+//	imprimeMapa();
+//	liberaMem(c);
+//	printf("\n");
+//
+//	imprimeMapa();
+//	liberaMem(e); 
+//	printf("\n");
+//	imprimeMapa();
+
+	finalizaAlocador();
 	return (0);
 }
 
@@ -43,17 +76,27 @@ void iniciaAlocador(){
 
 void* alocaMem(long int numBytes) {
 	percorreHeap = inicioHeap;
+	int flag = 0;
+	long int* auxEndr = 0;
 	// Loop verifica se existe algum espaço livre na heap
 	// Caso não exista, aloca no topo da heap
-	while(percorreHeap != topoHeap) {
+	while(percorreHeap < topoHeap) {
 		long int tamDataHeader  = *(percorreHeap+tamHeader);
-		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) >= numBytes) {
-			*percorreHeap = alocado;
-			// Testar isso aqui mais tarde
-			//*(percorreHeap+tamHeader) = numBytes;
-			return (void *) percorreHeap;
+		if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) >= numBytes && auxEndr != 0) {
+			if(*(auxEndr+tamHeader) >= *(percorreHeap+tamHeader) && *(auxEndr+tamHeader) >= numBytes)
+				auxEndr = percorreHeap;
+				
+		} else if(*percorreHeap == desalocado && *(percorreHeap+tamHeader) >= numBytes && auxEndr == 0) {
+			auxEndr = percorreHeap;
+			flag = 1;
 		}
 		percorreHeap += (tamHeader * 2) + tamDataHeader;
+	}
+
+	if(flag == 1) {
+		percorreHeap = auxEndr;
+		*percorreHeap = alocado;
+		return (void *) percorreHeap;
 	}
 
 	percorreHeap = topoHeap;
@@ -101,7 +144,6 @@ void imprimeMapa() {
 		printf("1-%p e %p\n", percorreHeap, percorreHeap);
 
 		for(long int i = 0; i < tamHeader * 2; i++) printf("#");
-		printf("\n");
 
 		if(alocadoOuDesalocado == 1) 
 			for(long int i = 0; i < tamDataHeader; i++) printf("+");

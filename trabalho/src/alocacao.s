@@ -2,6 +2,7 @@
 	inicioHeap: 	.quad 0		# .quad indica o long int(8 bytes)
 	topoHeap:		.quad 0	
 	percorreHeap: 	.quad 0		# Um ponteiro que percorre a heap, entre o inicioHeap e topoHeap
+	auxEndr: 		.quad 0 	# Uma váriavel auxiliar, para fazer o best-fit
 	alocado: 		.quad 1 	# flag que indica que o espaço está ocupado (alocado)
 	desalocado: 	.quad 0 	# flag que indica que a váriavel o espaço está descoupado (Desalocado)
 	tamHeader: 		.quad 8		# Váriavel que indica o tamanho de cada campo do header
@@ -45,91 +46,105 @@ alocaMem:
  	pushq %rbp
  	movq %rsp, %rbp
 	movq %rdi, %r12	
-	movq tamHeader, %rbx
+	movq $0, %r15						# Flag 0 ou 1 | inicia com 0
+	movq $0, auxEndr
+
+	movq inicioHeap, %rbx
+	movq %rbx, percorreHeap
+	movq topoHeap, %rdx
+	iniciaWhileProcuraEspaco:
+		cmpq %rdx, %rbx
+		jl procuraOuAlocaEspaco
+		jmp verificaSeAlocaNoTopo
+		procuraOuAlocaEspaco:
+ 			movq 8(%rbx), %rcx			# %rcx = *(percorreHeap+tamHeader)
+ 	
+ 			cmpq $0, (%rbx)
+ 			je ifDesalocado
+ 			jmp fimDesalocados
+
+ 			ifDesalocado:				
+ 				cmpq %r12, %rcx
+ 				jge cabeNoBloco
+ 				jmp fimDesalocados
  
-	movq inicioHeap, %rax
-	movq %rax, percorreHeap
-
-	inicioEncontrarEspacoHeap:
-		movq percorreHeap, %rax
-		movq topoHeap, %rcx
-		cmpq %rcx, %rax
-		jl fimDesalocado
-		jmp fimEncontrarEspacoHeap
-
-		inicioDesalocado:
-			cmpq %r13, %r12
-			jle cabeNoEspaco
-			jmp fimDesalocado
-			cabeNoEspaco:
-				movq $str2, %rdi
-				call printf
-
-				movq percorreHeap, %rax
-				movq alocado, %rbx
-				movq %rbx, (%rax)
-				movq percorreHeap, %rax
-
-				popq %rbp
-				ret
-		fimDesalocado:
-		movq (%rax), %rbx
-
-		addq tamHeader, %rax
-		movq (%rax), %r13
-
-		cmpq %rbx, desalocado
-		je inicioDesalocado
-
-		movq percorreHeap, %rax
-		addq tamHeader, %rax
-		movq (%rax), %r15
-		addq tamHeader, %rax
-		addq %r15, %rax
-		movq %rax, percorreHeap
-		jmp inicioEncontrarEspacoHeap
-
-	fimEncontrarEspacoHeap:
-		movq topoHeap, %rax			# percorreHeap = topoHeap
-		movq %rax, percorreHeap
+ 				cabeNoBloco:
+ 					movq auxEndr, %r14			# %r14 contém o auxEndr
+ 					cmpq $0, %r14
+ 					je primeiroSlotLivre
+ 					jmp comparaDesalocadoAtualComAnterior
+ 
+ 					comparaDesalocadoAtualComAnterior:
+ 						cmpq %rcx, 8(%r14)
+ 						jge comparaSeOSlotAtualMaiorQueNumBytes
+ 						jmp fimDesalocados
+ 
+ 						comparaSeOSlotAtualMaiorQueNumBytes:
+ 							cmpq %r12, 8(%r14)
+ 							jge atualizaAuxEndr
+ 							jmp fimDesalocados
+ 
+ 							atualizaAuxEndr:
+ 								movq %rbx, auxEndr
+ 								jmp fimDesalocados
+ 
+ 					primeiroSlotLivre:
+ 						movq %rbx, auxEndr
+ 						movq $1, %r15
+ 						jmp fimDesalocados
+ 
 	
-		movq tamHeader, %rbx
-	
-		addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
-		addq %rbx, topoHeap			
-		addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
+		fimDesalocados:
+		addq tamHeader, %rbx
+		movq (%rbx), %rcx
+		addq tamHeader, %rbx
+		addq %rcx, %rbx
+		movq %rbx, percorreHeap
+		jmp iniciaWhileProcuraEspaco
 
-		movq topoHeap, %rdi				# brk(topoHeap)
-		movq $12, %rax
-		syscall
-	
-		movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
-		movq alocado, %rcx
-		movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
-	
-		movq %rax, percorreHeap
-		addq %rbx, %rax
-		movq %r12, (%rax)
-	
-	#	movq $inteiro, %rdi
-	#	movq (%rax), %rsi
-	#	call printf
+	verificaSeAlocaNoTopo: 				# Aloca para a primeira alocação
+	cmpq $1, %r15
+	je retornaAuxEndr
+	jmp alocaTopo
+	retornaAuxEndr:
 
-		movq percorreHeap, %rax
+		movq auxEndr, %rbx
+		movq %rbx, percorreHeap
+		movq $1, (%rbx)
+
+		movq auxEndr, %rax
 
 		popq %rbp
 		ret
- 
+
+	alocaTopo:
+#	movq topoHeap, %rbx
+#	movq %rbx, percorreHeap
+
+	addq $16, topoHeap
+	addq %r12, topoHeap
+
+	movq topoHeap, %rdi 			# Passa o parametro para a função brk
+	movq $12, %rax					# o 12 é a syscall do brk
+	syscall
+
+	movq percorreHeap, %rbx 		
+	movq $1, (%rbx)
+
+	addq $8, %rbx
+	movq %r12, (%rbx)
+
+	movq percorreHeap, %rax
+
+	popq %rbp
+	ret
+
 
 liberaMem:
 	pushq %rbp
 	movq %rsp, %rbp
 
 	movq %rdi, %r12				# Bloco que vai ser desalocado. r12 = bloco
-
-	movq $ponteiro, %rdi
-	movq %r12, %rsi
-	call printf
 
 	movq %r12, percorreHeap
 	movq percorreHeap, %rax
@@ -185,16 +200,16 @@ imprimeMapa:
 
 			movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
 
-			movq $inteiro, %rdi
-			movq (%r13), %rsi
-			call printf
+			# movq $inteiro, %rdi
+			# movq (%r13), %rsi
+			# call printf
 	
 			addq %rbx, percorreHeap
 			movq percorreHeap, %r14		# tamDataHeader = *(percorreHeap + tamDataHeader)
 
-			movq $inteiro, %rdi
-			movq (%r14), %rsi
-			call printf
+			# movq $inteiro, %rdi
+			# movq (%r14), %rsi
+			# call printf
 
 			addq %rbx, percorreHeap
 	
@@ -210,8 +225,8 @@ imprimeMapa:
 				jmp inicioForCabecalho
 	
 			fimForCabecalho:
-			movq $quebraLinha, %rdi
-			call printf
+			# movq $quebraLinha, %rdi
+			# call printf
 	
 			movq $0, %r12
 			cmpq $1, (%r13)
