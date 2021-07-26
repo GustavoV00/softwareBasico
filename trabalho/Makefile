@@ -12,11 +12,11 @@ CFLAGS=-Wall -g -no-pie -fno-pie
 TEST=./test
 
 all: build
-build: alocacao.o
-	$(GCC) $(CFLAGS) $(SRC)/test.c $(SRC)/alocacao.o -o test 
+build: meuAlocador.o
+	$(GCC) $(CFLAGS) $(SRC)/test.c $(SRC)/meuAlocador.o -o test 
 
-alocacao.o:
-	$(AS) $(SRC)/alocacao.s -o $(SRC)/alocacao.o -g
+meuAlocador.o:
+	$(AS) $(SRC)/meuAlocador.s -o $(SRC)/meuAlocador.o -g
 
 ## Limpa os diretórios
 clean:
