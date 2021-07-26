@@ -19,7 +19,7 @@ int main() {
 	imprimeMapa();
 	printf("\n");
 
-	d = alocaMem(200);
+	d = alocaMem(201);
 	imprimeMapa();
 	printf("\n");
 
@@ -39,21 +39,38 @@ int main() {
 	imprimeMapa();
 	printf("\n");
 
-	e = alocaMem(20);
+	e = alocaMem(5000);
 	imprimeMapa();
 	printf("\n");
 
 	liberaMem(b);
+	imprimeMapa();
 	printf("\n");
 
+	b = alocaMem(2000);
 	imprimeMapa();
+	printf("\n");
+
 	liberaMem(c);
+	imprimeMapa();
 	printf("\n");
 
+	c = alocaMem(20);
 	imprimeMapa();
+	printf("\n");
+
 	liberaMem(e); 
 	printf("\n");
 	imprimeMapa();
+
+	liberaMem(c);
+	imprimeMapa();
+	printf("\n");
+
+	liberaMem(b);
+	imprimeMapa();
+	printf("\n");
+
 
 	finalizaAlocador();
 

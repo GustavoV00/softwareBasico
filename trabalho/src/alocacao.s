@@ -1,11 +1,14 @@
 .section .data
 	inicioHeap: 	.quad 0		# .quad indica o long int(8 bytes)
 	topoHeap:		.quad 0	
+	topoBrk:  		.quad 0     # Aponta para o topo do 4k
 	percorreHeap: 	.quad 0		# Um ponteiro que percorre a heap, entre o inicioHeap e topoHeap
 	auxEndr: 		.quad 0 	# Uma váriavel auxiliar, para fazer o best-fit
 	alocado: 		.quad 1 	# flag que indica que o espaço está ocupado (alocado)
 	desalocado: 	.quad 0 	# flag que indica que a váriavel o espaço está descoupado (Desalocado)
 	tamHeader: 		.quad 8		# Váriavel que indica o tamanho de cada campo do header
+	quatroK:        .quad 4096  # Flag que indica o 4k
+    total:          .quad 0     # Conforme for sendo alocado, vai aumentando esse aqui. Quando bater 4k aloca mais 4k
 	str1: 			.string "A heap está vazia!\n"
 	str2:			.string "Estou aqui!\n"
 	str3:			.string "#"
@@ -32,78 +35,109 @@ iniciaAlocador:
 
 	movq %rax, inicioHeap # Faz o inicioHeap e topoHeap receber o end. inicial da heap
 	movq %rax, topoHeap
+    movq %rax, topoBrk
 
-	movq topoHeap, %rdi # Inicia o alocador na heap
+    addq $4096, topoBrk
+
+	movq topoBrk, %rdi # Inicia o alocador na heap
 	movq $12, %rax   	 # Com com esoaço igual a zero			
 	syscall
 
 	popq %rbp 			# Desaloca o %rbp
 	ret					# faz o retorno para o end. Anterior
 
-
 # Foi implementado para apenas um caso por enquanto
 alocaMem:
  	pushq %rbp                          # Abre espaço na pilha
  	movq %rsp, %rbp                     # Aponta o %rbp e %rsp para a mesma posição
 	movq %rdi, %r12	                    # Aloca o numBytes no %r12
-	movq $0, %r15						# Flag 0 ou 1 | inicia com 0
 	movq $0, auxEndr                    # Uma variavel global. Serve para quando existir algum bloco livre, indica que 
-                                        # é para alocar nesse bloco livre (best-fit)
-	movq inicioHeap, %rbx               # Arruma as posições do inicio e topoHeap
-	movq %rbx, percorreHeap         
-	movq topoHeap, %rdx
+	movq total, %r15
+	addq %r12, %r15 		# Váriavel auxiliar para alocar o 4k
+	addq $16, %r15
+
+	calculaSeValorAlocaoCabe:
+		cmpq quatroK, %r15
+		jg aumentaQuatroK
+		jmp fimAumentaQuatroK
+		
+		aumentaQuatroK: 			# Faz um loop que vai somando o 4k até ter memória o sufuciente para pelo menos a próxima alocação
+			movq $str2, %rdi
+			call printf
+		
+			addq $4096, quatroK
+			movq quatroK, %rcx
+			addq %rcx, topoBrk
+		
+			movq topoBrk, %rdi
+			movq $12, %rax
+			syscall
+		
+			jmp calculaSeValorAlocaoCabe
+
+	fimAumentaQuatroK:
+		movq %r15, total
+		movq $0, %r15						# Flag 0 ou 1 | inicia com 0
+		movq inicioHeap, %rbx
+		movq %rbx, percorreHeap # Arruma as posições do inicio e topoHeap
+		movq topoHeap, %rdx
+
 	iniciaWhileProcuraEspaco:
 		cmpq %rdx, %rbx                 # Faz a comporação inicioHeap < topoHeap e entra no while
 		jl procuraOuAlocaEspaco         # Caso não esteja no topo
 		jmp verificaSeAlocaNoTopo       # Caso esteja no topo
 		procuraOuAlocaEspaco:
- 			movq 8(%rbx), %rcx			# %rcx = *(percorreHeap+tamHeader)
- 	
- 			cmpq $0, (%rbx)             # Caso exista algum bloco desalocado
- 			je ifDesalocado             # (%rbx) seria o valor 0 ou 1 de alocado ou desalocado
- 			jmp fimDesalocados
+			movq %rbx, %rdx
+			addq tamHeader, %rdx
+			movq (%rdx), %rcx			# %rcx = *(percorreHeap+tamHeader)
+	
+			cmpq $0, (%rbx)             # Caso exista algum bloco desalocado
+			je ifDesalocado             # (%rbx) seria o valor 0 ou 1 de alocado ou desalocado
+			jmp fimDesalocados
 
- 			ifDesalocado:				
- 				cmpq %r12, %rcx   		#	Verifica se o bloco que vai ser alocado, cabe em algum 
- 				jge cabeNoBloco 		# bloco que está desalocado
- 				jmp fimDesalocados
- 
- 				cabeNoBloco:
- 					movq auxEndr, %r14			# %r14 contém o auxEndr
- 					cmpq $0, %r14 				# Caso caiba, ele altera o auxEndr para o endr do bloco livre
- 					je primeiroSlotLivre
- 					jmp comparaDesalocadoAtualComAnterior
- 
- 					comparaDesalocadoAtualComAnterior:
- 						cmpq %rcx, 8(%r14) 							# Caso tenha mais de um bloco livre, o numBytes vai procurar o menor
- 						jge comparaSeOSlotAtualMaiorQueNumBytes 	# Caso o numBytes caiba
- 						jmp fimDesalocados
- 
- 						comparaSeOSlotAtualMaiorQueNumBytes: 		# Caso seja maior que num bytes 
- 							cmpq %r12, 8(%r14)						# Atualiza o auxEndr com o novo menor possivel para numBytes
- 							jge atualizaAuxEndr
- 							jmp fimDesalocados
- 
- 							atualizaAuxEndr:
- 								movq %rbx, auxEndr
- 								jmp fimDesalocados
- 
- 					primeiroSlotLivre:
- 						movq %rbx, auxEndr
- 						movq $1, %r15
- 						jmp fimDesalocados
- 
+			ifDesalocado:				
+			cmpq %r12, %rcx   		#	Verifica se o bloco que vai ser alocado, cabe em algum 
+			jge cabeNoBloco 		# bloco que está desalocado
+			jmp fimDesalocados
+
+				cabeNoBloco:
+					movq auxEndr, %r14			# %r14 contém o auxEndr
+					cmpq $0, %r14 				# Caso caiba, ele altera o auxEndr para o endr do bloco livre
+					je primeiroSlotLivre
+					jmp comparaDesalocadoAtualComAnterior
+
+					comparaDesalocadoAtualComAnterior:
+						movq 8(%rbx), %rcx
+						cmpq %rcx, 8(%r14) 							# Caso tenha mais de um bloco livre, o numBytes vai procurar o menor
+						jge comparaSeOSlotAtualMaiorQueNumBytes 	# Caso o numBytes caiba
+						jmp fimDesalocados
+
+						comparaSeOSlotAtualMaiorQueNumBytes: 		# Caso seja maior que num bytes 
+							cmpq %r12, 8(%r14)						# Atualiza o auxEndr com o novo menor possivel para numBytes
+							jge atualizaAuxEndr
+							jmp fimDesalocados
+
+							atualizaAuxEndr:
+								movq %rbx, auxEndr
+								jmp fimDesalocados
+
+			primeiroSlotLivre:
+				movq %rbx, auxEndr
+				movq $1, %r15
+				jmp fimDesalocados
 	
 		fimDesalocados: 			# Caso alguma condição acima não de certo 
-		addq tamHeader, %rbx 		# Faz a soma padrão do percoHeep. percorreHeap += 16 + tamDataHeader
+		movq percorreHeap, %rbx
+		addq tamHeader, %rbx
 		movq (%rbx), %rcx
 		addq tamHeader, %rbx
 		addq %rcx, %rbx
 		movq %rbx, percorreHeap
+		movq topoHeap, %rdx
 		jmp iniciaWhileProcuraEspaco
 
 	verificaSeAlocaNoTopo: 				# Aloca para a primeira alocação
-	cmpq $1, %r15 						# Flag que indica se existe algo no auxEndr
+	cmpq $1, %r15
 	je retornaAuxEndr
 	jmp alocaTopo
 	retornaAuxEndr: 					# Caso o auxEndr exista, retorna ele 
@@ -112,38 +146,37 @@ alocaMem:
 		movq %rbx, percorreHeap
 		movq $1, (%rbx)
 
-		movq auxEndr, %rax
+		movq percorreHeap, %rax
 
 		popq %rbp
 		ret
 
 	alocaTopo: 							# Caso não exista, atualiza o topo
-#	movq topoHeap, %rbx
-#	movq %rbx, percorreHeap
+		movq topoHeap, %rax			# percorreHeap = topoHeap
+		movq %rax, percorreHeap
+	
+		movq tamHeader, %rbx
+	
+		addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
+		addq %rbx, topoHeap			
+		addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
 
-	addq $16, topoHeap
-	addq %r12, topoHeap
+		movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
+		movq alocado, %rcx
+		movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
+	
+		movq percorreHeap, %rax
+		addq %rbx, %rax
+		movq %r12, (%rax)
+	
+		movq percorreHeap, %rax
 
-	movq topoHeap, %rdi 			# Passa o parametro para a função brk
-	movq $12, %rax					# o 12 é a syscall do brk
-	syscall
-
-	movq percorreHeap, %rbx 		
-	movq $1, (%rbx)
-
-	addq $8, %rbx
-	movq %r12, (%rbx)
-
-	movq percorreHeap, %rax
-
-	popq %rbp
-	ret
-
+		popq %rbp
+		ret
 
 liberaMem:
 	pushq %rbp
 	movq %rsp, %rbp
-
 	movq %rdi, %r12				# Bloco que vai ser desalocado. r12 = bloco
 
 	movq %r12, percorreHeap
@@ -200,12 +233,16 @@ imprimeMapa:
 
 			movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
 
+			movq $ponteiro, %rdi
+			movq %r13, %rsi
+			call printf
+
 			movq $inteiro, %rdi
 			movq (%r13), %rsi
 			call printf
 	
 			addq %rbx, percorreHeap
-			movq percorreHeap, %r14		# tamDataHeader = *(percorreHeap + tamDataHeader)
+			movq percorreHeap, %r14		# tamDataHeader = (percorreHeap + tamDataHeader)
 
 			movq $inteiro, %rdi
 			movq (%r14), %rsi

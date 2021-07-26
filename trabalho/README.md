@@ -5,8 +5,6 @@ GRR: 20182557
 Fernando Zanutto Mady Barbosa
 GRR: 20182625
 
-
-
 ### Descrição ###
 -> Alocador de memória feito em assembly e utilizando a syscall brk.
 
@@ -31,6 +29,9 @@ GRR: 20182625
 Váriaveis globais:
     inicioHeap: Está sempre apontando para onde a heap começa.
     topoHeap: Está sempre apontando para o topo da heap.
+    topoBrk: Indica o topo da syscall Brk.
+    quatroK: Váriavel que auxilia na implementação da variação do 4k
+    total: Quantidade de memória que os blocos estão usando.
     percorreHeap: É uma variável que percorre a heap, quando existe uma necessidade.
     auxEndr: Serve como um endereço auxiliar no caso do best-fit.
     alocado: Indica se o bloco está alocado.
@@ -44,3 +45,10 @@ Diretivas:
     liberaMem: libera algum bloco de memória
     finalizaAlocador: Faz a heap apontar para o inicio novamente. 
     imprimeMapa: Imprime o cabeçalho e os dados da heap.
+
+Implementação:
+    -> O método utilizado para fazer a implementação do alocador em assembly, foi utilizando a ideia do best-fit e utilizando a ideia do 4k para diminuir a quantidade de chamadas ao sistema.  
+
+    -> Na primeira alocação, ele aloca diretamente no topo da heap que também é o próprio inicio da heap, e a partir da segunda alocação, o ponteiro que percorre a heap vai percorrendo todos os blocos da heap até encontrar algum bloco que esteja com espaço livre ou encontrar o topo da heap. Caso encontre o topo da heap, aloca esse novo bloco direto no topo, caso encontre algum bloco que esteja livre, esse novo bloco é alocado nesse bloco livre. Isso apenas se o novo bloco couber nesse bloco desalocado. E o ultimo caso, é quando um novo bloco vai ser alocado e existe vários blocos que estejam livres, o algoritimo vai procurar o menor bloco possivel que esse novo bloco pode caber. 
+
+    -> E conforme vai precisando de mais memória, vai alocando 4k de bytes a mais.

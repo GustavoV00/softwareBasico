@@ -5,10 +5,13 @@
 
 long int* inicioHeap;
 long int* topoHeap;
+long int* topoBrk;
 long int* percorreHeap;
 long int alocado = 1;
 long int desalocado = 0;
 long int tamHeader = sizeof(long int);
+long int quatroK = 4096;
+long int total = 0;
 
 int main(int argc, char ** argv){
 	void *a, *b, *c, *d, *e, *f;
@@ -46,30 +49,32 @@ int main(int argc, char ** argv){
 	imprimeMapa();
 	printf("\n");
 
-	e = alocaMem(20);
+	e = alocaMem(20000);
 	imprimeMapa();
 	printf("\n");
 
-//	b = alocaMem(20);
-//	printf("\n");
+	b = alocaMem(20);
+	printf("\n");
 
-//	imprimeMapa();
-//	liberaMem(c);
-//	printf("\n");
-//
-//	imprimeMapa();
-//	liberaMem(e); 
-//	printf("\n");
-//	imprimeMapa();
+	imprimeMapa();
+	liberaMem(c);
+	printf("\n");
+
+	imprimeMapa();
+	liberaMem(e); 
+	printf("\n");
+	imprimeMapa();
 
 	finalizaAlocador();
 	return (0);
 }
-
 void iniciaAlocador(){
 	inicioHeap = (long int *) sbrk(0); // sbrk(0) retorna o endereço do topo da heap
-	topoHeap = inicioHeap;
-	brk((void *) topoHeap);
+    topoBrk = inicioHeap;
+    topoHeap = inicioHeap;
+
+    topoBrk += quatroK;
+	brk((void *) topoBrk);
 
 	return;
 }
@@ -78,6 +83,13 @@ void* alocaMem(long int numBytes) {
 	percorreHeap = inicioHeap;
 	int flag = 0;
 	long int* auxEndr = 0;
+	while(quatroK < total){
+        printf("Entgrei aqui \n");
+        quatroK += 4096;
+        topoBrk += quatroK;
+        brk((void *) topoBrk);
+
+    }
 	// Loop verifica se existe algum espaço livre na heap
 	// Caso não exista, aloca no topo da heap
 	while(percorreHeap < topoHeap) {
@@ -93,7 +105,7 @@ void* alocaMem(long int numBytes) {
 		percorreHeap += (tamHeader * 2) + tamDataHeader;
 	}
 
-	if(flag == 1) {
+	if(auxEndr != 0) {
 		percorreHeap = auxEndr;
 		*percorreHeap = alocado;
 		return (void *) percorreHeap;
