@@ -7,8 +7,8 @@
 	alocado: 		.quad 1 	# flag que indica que o espaço está ocupado (alocado)
 	desalocado: 	.quad 0 	# flag que indica que a váriavel o espaço está descoupado (Desalocado)
 	tamHeader: 		.quad 8		# Váriavel que indica o tamanho de cada campo do header
-	quatroK:        .quad 4096  # Flag que indica o 4k
-    total:          .quad 0     # Conforme for sendo alocado, vai aumentando esse aqui. Quando bater 4k aloca mais 4k
+	quatroK:        .quad 1000  # Flag que indica o 4k
+    str0:           .string "Está começando a heap!\n"
 	str1: 			.string "A heap está vazia!\n"
 	str2:			.string "Estou aqui!\n"
 	str3:			.string "#"
@@ -29,6 +29,9 @@ iniciaAlocador:
 	pushq %rbp			# Abre espaço na pilha
 	movq %rsp, %rbp 	# Faz o rsp apontar para o rbp
 
+    movq $str0, %rdi    # Printf da sorte. Sem ele o código n funciona. 
+    call printf         # Caso apague, o código entra em loop infinito
+
 	movq $0, %rdi 		# Indica o valor que vai ser passado como parametro na syscall
 	movq $12, %rax		# Indica qual vai ser a syscall que vai ser chamada
 	syscall 			# O endereço de retorno do sbrk(0) fica no %rax
@@ -37,7 +40,7 @@ iniciaAlocador:
 	movq %rax, topoHeap
     movq %rax, topoBrk
 
-    addq $4096, topoBrk
+#    addq $1000, topoBrk
 
 	movq topoBrk, %rdi # Inicia o alocador na heap
 	movq $12, %rax   	 # Com com esoaço igual a zero			
@@ -52,36 +55,10 @@ alocaMem:
  	movq %rsp, %rbp                     # Aponta o %rbp e %rsp para a mesma posição
 	movq %rdi, %r12	                    # Aloca o numBytes no %r12
 	movq $0, auxEndr                    # Uma variavel global. Serve para quando existir algum bloco livre, indica que 
-	movq total, %r15
-	addq %r12, %r15 		# Váriavel auxiliar para alocar o 4k
-	addq $16, %r15
 
-	calculaSeValorAlocaoCabe:
-		cmpq quatroK, %r15
-		jg aumentaQuatroK
-		jmp fimAumentaQuatroK
-		
-		aumentaQuatroK: 			# Faz um loop que vai somando o 4k até ter memória o sufuciente para pelo menos a próxima alocação
-			movq $str2, %rdi
-			call printf
-		
-			addq $4096, quatroK
-			movq quatroK, %rcx
-			addq %rcx, topoBrk
-		
-			movq topoBrk, %rdi
-			movq $12, %rax
-			syscall
-		
-			jmp calculaSeValorAlocaoCabe
-
-	fimAumentaQuatroK:
-		movq %r15, total
-		movq $0, %r15						# Flag 0 ou 1 | inicia com 0
-		movq inicioHeap, %rbx
-		movq %rbx, percorreHeap # Arruma as posições do inicio e topoHeap
-		movq topoHeap, %rdx
-
+	movq inicioHeap, %rbx
+	movq %rbx, percorreHeap # Arruma as posições do inicio e topoHeap
+	movq topoHeap, %rdx
 	iniciaWhileProcuraEspaco:
 		cmpq %rdx, %rbx                 # Faz a comporação inicioHeap < topoHeap e entra no while
 		jl procuraOuAlocaEspaco         # Caso não esteja no topo
@@ -152,27 +129,52 @@ alocaMem:
 		ret
 
 	alocaTopo: 							# Caso não exista, atualiza o topo
-		movq topoHeap, %rax			# percorreHeap = topoHeap
-		movq %rax, percorreHeap
-	
-		movq tamHeader, %rbx
-	
-		addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
-		addq %rbx, topoHeap			
-		addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
 
-		movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
-		movq alocado, %rcx
-		movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
-	
-		movq percorreHeap, %rax
-		addq %rbx, %rax
-		movq %r12, (%rax)
-	
-		movq percorreHeap, %rax
+	movq topoHeap, %rax			# percorreHeap = topoHeap
+	movq %rax, percorreHeap
 
-		popq %rbp
-		ret
+	movq tamHeader, %rbx
+
+	addq %rbx, topoHeap 		# Os dois addq aumenta o espaço do cabecalho
+	addq %rbx, topoHeap			
+	addq %r12, topoHeap			# Aqui aumenta o espaço da área de dados. topoHeap += numBytes
+
+    movq topoHeap, %r15
+    movq topoBrk, %r14
+
+	calculaSeValorAlocaoCabe:
+    cmpq %r14, %r15
+	jg aumentaQuatroK
+	jmp alocaMaisMemoria
+	
+	aumentaQuatroK: 			# Faz um loop que vai somando o 4k até ter memória o sufuciente para pelo menos a próxima alocação
+	movq $str2, %rdi
+	call printf
+    
+    addq quatroK, %r14
+    movq %r14, topoBrk
+    
+    jmp calculaSeValorAlocaoCabe
+    alocaMaisMemoria:
+	movq topoBrk, %rdi
+	movq $12, %rax
+	syscall
+
+	jmp fimAumentaQuatroK
+
+    fimAumentaQuatroK:
+	movq percorreHeap, %rax			# faz o alocado *alocado ir para o %rax
+	movq alocado, %rcx
+	movq %rcx, (%rax) 			# *percorreHeap = alocado/desalocado
+
+	movq percorreHeap, %rax
+	addq %rbx, %rax
+	movq %r12, (%rax)
+
+	movq percorreHeap, %rax
+
+	popq %rbp
+	ret
 
 liberaMem:
 	pushq %rbp
@@ -231,22 +233,19 @@ imprimeMapa:
 			cmpq %rax, %rcx
 			jle fimImprimeMapa
 
+
 			movq percorreHeap, %r13		# alocadoOuDesalocado = *percorreHeap
 
-			movq $ponteiro, %rdi
-			movq %r13, %rsi
-			call printf
+            movq $inteiro, %rdi
+            movq (%r13), %rsi
+            call printf
 
-			movq $inteiro, %rdi
-			movq (%r13), %rsi
-			call printf
-	
 			addq %rbx, percorreHeap
 			movq percorreHeap, %r14		# tamDataHeader = (percorreHeap + tamDataHeader)
 
-			movq $inteiro, %rdi
-			movq (%r14), %rsi
-			call printf
+            movq $inteiro, %rdi
+            movq (%r14), %rsi
+            call printf
 
 			addq %rbx, percorreHeap
 	
